@@ -4,53 +4,68 @@ using UnityEngine;
 
 public class PlayerCollision : MonoBehaviour
 {
-    public float ps = 6;
-    public float force = 4;
+    public CharacterController2D controller;
+    public Animator animator;
 
-    public bool grounded;
+    public float runspeed = 40f;
+    float horizontalMove = 0f;
 
-    private Vector3 initalScale;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        initalScale = transform.localScale;
-    }
-
+    bool jump = false;
+    bool roll = false;
+    bool fire = false;
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKey(KeyCode.RightArrow))
+        horizontalMove = Input.GetAxisRaw("Horizontal") * runspeed;
+        animator.SetFloat("speed", Mathf.Abs(horizontalMove));
+
+        //no chapchap spider web transition
+        //animator.Play()
+
+        if (Input.GetButtonDown("Jump"))
         {
-            transform.position += ps * Vector3.right * Time.deltaTime;
-            transform.localScale = new Vector3(initalScale.x, initalScale.y, initalScale.z);
+            jump = true;
+            //animation jump
+            animator.SetBool("isJumping", true);
         }
-        if (Input.GetKey(KeyCode.LeftArrow))
+        if (Input.GetButtonDown("Crouch"))
         {
-            transform.position += ps * Vector3.left * Time.deltaTime;
-            transform.localScale = new Vector3(-initalScale.x, initalScale.y, initalScale.z);
+            roll = true;
         }
-        if (Input.GetKeyDown(KeyCode.UpArrow) && grounded)
+        else if (Input.GetButtonUp("Crouch"))
         {
-            GetComponent<Rigidbody2D>().AddForce(force * Vector3.up, ForceMode2D.Impulse);
+            roll = false;
+        }
+        if (Input.GetButtonDown("Fire1"))
+        {
+            fire = true;
+            animator.SetBool("isFiring", true);
+        }
+        else if (Input.GetButtonUp("Fire1"))
+        {
+            fire = false;
+            animator.SetBool("isFiring", false);
+
         }
     }
-    private void OnCollisionEnter2D(Collision2D collision)
+    public void onLanding()
     {
-        if (collision.gameObject.layer == 6)
-        {
-            grounded = true;
-        }
-        if (collision.collider.gameObject.layer == 10 && !grounded)
-        {
-            Destroy(collision.rigidbody.gameObject);
-        }
+        animator.SetBool("isJumping", false);
     }
-    private void OnCollisionExit2D(Collision2D collision)
+    public void onCrouching(bool isCrouching)
     {
-        if (collision.gameObject.layer == 6)
-        {
-            grounded = false;
-        }
+        animator.SetBool("isCrouching", isCrouching);
+    }
+    /*
+    public void onFiring(bool isFiring)
+    {
+        animator.SetBool("isFiring", isFiring);
+    } */
+
+    void FixedUpdate()
+    {
+        //player movement
+        controller.Move(horizontalMove * Time.fixedDeltaTime, roll, jump);
+        jump = false;
     }
 }
